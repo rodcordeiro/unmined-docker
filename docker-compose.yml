@@ -1,0 +1,49 @@
+services:
+    unmined:
+      image: unmined-cli:local
+      pull_policy: never
+      init: true
+      restart: unless-stopped
+      working_dir: /opt/unmined
+
+      volumes:
+        - type: bind
+          source: ./world
+          target: /world
+          read_only: true
+          bind:
+            create_host_path: false
+
+        - type: bind
+          source: ./output
+          target: /output
+          bind:
+            create_host_path: false
+
+      entrypoint: ["/bin/sh", "-c"]
+      command:
+        - |
+          while true; do
+            echo "Iniciando atualização do mapa..."
+
+            if /opt/unmined/unmined-cli web render \
+              --world /world \
+              --dimension overworld \
+              --output /output \
+              --imageformat png \
+              --players \
+              --shadows 3do \
+              -c; then
+              echo "Mapa atualizado."
+            else
+              echo "Falha na renderização; nova tentativa em 5 minutos." >&2
+            fi
+
+            sleep 300
+          done
+
+      logging:
+        driver: json-file
+        options:
+          max-size: "10m"
+          max-file: "3"
